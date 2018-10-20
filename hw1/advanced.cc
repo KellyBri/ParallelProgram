@@ -63,18 +63,18 @@ int main(int argc, char *argv[]){
 	
 	//check the number of parameter
 	//If it wouldn't meet the require, show error message and terminate the program.
-	// if(argc != 4){
-	// 	std::cout<<"Error number of parameter. Terminating."<<std::endl;
-	// 	return 0;
-	// }
+	if(argc != 4){
+		std::cout<<"Error number of parameter. Terminating."<<std::endl;
+		return 0;
+	}
 	
 	//initialize the MPI execution environment
 	//If it wouldn't success, show the error message and abort it.
 	rc = MPI_Init(&argc, &argv);
-	// if(rc != MPI_SUCCESS){
-	// 	std::cout<<"Error starting MPI program. Terminating."<<std::endl;
-	// 	MPI_Abort(MPI_COMM_WORLD, rc);
-	// }
+	if(rc != MPI_SUCCESS){
+		std::cout<<"Error starting MPI program. Terminating."<<std::endl;
+		MPI_Abort(MPI_COMM_WORLD, rc);
+	}
 	
 	//determine the number of tasks in the group & the rank of each task within the communicator
 	MPI_Comm_size(MPI_COMM_WORLD, &taskNum);
@@ -114,10 +114,10 @@ int main(int argc, char *argv[]){
  	//open a file with readonly mode
 	//If it wouldn't success, show the error message and abort it.
 	rc = MPI_File_open(SURVIVAL_COMM, inputFileName, MPI_MODE_RDONLY, MPI_INFO_NULL, &inputFile);
-	// if(rc != MPI_SUCCESS){
-	// 	std::cout<<"Error opening the file. Terminating."<<std::endl;
-	// 	MPI_Abort(SURVIVAL_COMM, rc);
-	// }
+	if(rc != MPI_SUCCESS){
+		std::cout<<"Error opening the file. Terminating."<<std::endl;
+		MPI_Abort(SURVIVAL_COMM, rc);
+	}
 	
 	//read a file
 	//If it wouldn't success, show the error message and abort it.
@@ -125,18 +125,18 @@ int main(int argc, char *argv[]){
 	float *buf = new float[taskProblemSize];
 	int offset = begin * sizeof(MPI_FLOAT);
 	rc = MPI_File_read_at(inputFile, offset, buf, taskProblemSize, MPI_FLOAT, MPI_STATUS_IGNORE);
-	// if(rc != MPI_SUCCESS){
-	// 	std::cout<<"Error reading the file. Terminating."<<std::endl;
-	// 	MPI_Abort(SURVIVAL_COMM, rc);
-	// }
+	if(rc != MPI_SUCCESS){
+		std::cout<<"Error reading the file. Terminating."<<std::endl;
+		MPI_Abort(SURVIVAL_COMM, rc);
+	}
 	
 	//close input file
 	//If it wouldn't success, show the error message and abort it.
 	rc = MPI_File_close(&inputFile);
-	// if(rc != MPI_SUCCESS){
-	// 	std::cout<<"Error closing the file. Terminating."<<std::endl;
-	// 	MPI_Abort(SURVIVAL_COMM, rc);
-	// }
+	if(rc != MPI_SUCCESS){
+		std::cout<<"Error closing the file. Terminating."<<std::endl;
+		MPI_Abort(SURVIVAL_COMM, rc);
+	}
 
 	//sort buf of each task with ascending order
 	std::sort(buf, buf+taskProblemSize);
