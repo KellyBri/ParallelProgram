@@ -1,7 +1,5 @@
 #include <iostream>
 #include <cstring>
-#include <fstream>
-#include <assert.h>
 #include <omp.h>
 #include <png.h>
 #define PNG_NO_SETJMP
@@ -15,11 +13,8 @@ typedef struct {
 
 void write_png(const char* filename, const int width, const int height, const int* buffer) {
     FILE* fp = fopen(filename, "wb");
-    assert(fp);
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    assert(png_ptr);
     png_infop info_ptr = png_create_info_struct(png_ptr);
-    assert(info_ptr);
     png_init_io(png_ptr, fp);
     png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
                  PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
@@ -79,7 +74,7 @@ int main(int argc, char** argv){
             Z.x = 0;
             Z.y = 0;
             
-            while(i < 10000 && length <= 4){
+            while(i < MAX_ITER && length <= 4){
                 double temp = Z.x * Z.x - Z.y * Z.y + C.x;
                 Z.y = 2 * Z.x * Z.y + C.y;
                 Z.x = temp;
