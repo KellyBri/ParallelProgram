@@ -1,0 +1,31 @@
+--How to Compile
+In this directory, enter the following command:
+$ make mpi_static
+It will generate the executable file " mpi_static " in the current directory 
+$ make mpi_dynamic
+It will generate the executable file " mpi_static " in the current directory 
+$ make omp
+It will generate the executable file " mpi_static " in the current directory 
+$ make hybrid
+It will generate the executable file " mpi_static " in the current directory 
+
+If you want to remove these executable files please enter the following command
+$ make clean
+
+--How to Run
+Usage: srun -n <procs> -c <thread> ./<exe> <thread> <left> <right> <lower> <upper> <w> <h> <out> 
+
+The meanings of the arguments are:
+procs – int; [1, 48]; number of processes. Always 1 for the OpenMP version.
+thread – int; [1, 12]; number of threads per process. Always 1 for the MPI versions. (technically, this is the number of CPUs you can use per process; you are allowed to use more or fewer threads)
+left – double; [-10, 10]; inclusive lower bound of the real axis.
+right – double; [-10, 10]; non-inclusive upper bound of the real axis.
+lower – double; [-10, 10]; inclusive lower bound of the imaginary axis.
+upper – double; [-10, 10]; non-inclusive upper bound of the imaginary axis.
+w – int; [1, 16000]; number of points in the x-axis for output.
+h – int; [1, 16000]; number of points in the y-axis for output.
+out – string; the path to the output file.
+
+
+e.g.:
+srun -n 4 -c 1 ./mpi_dynamic 1 -2 2 -2 2 400 400 out
