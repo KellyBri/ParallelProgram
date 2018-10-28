@@ -3,11 +3,11 @@ In this directory, enter the following command:
 $ make mpi_static
 It will generate the executable file " mpi_static " in the current directory 
 $ make mpi_dynamic
-It will generate the executable file " mpi_static " in the current directory 
+It will generate the executable file " mpi_dynamic " in the current directory 
 $ make omp
-It will generate the executable file " mpi_static " in the current directory 
+It will generate the executable file " omp " in the current directory 
 $ make hybrid
-It will generate the executable file " mpi_static " in the current directory 
+It will generate the executable file " hybrid " in the current directory 
 
 If you want to remove these executable files please enter the following command
 $ make clean
