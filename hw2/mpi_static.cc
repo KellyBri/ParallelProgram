@@ -131,7 +131,7 @@ int main(int argc, char** argv){
     }
     MPI_Bcast(problem, globalProblemSize, MPI_INT, 0, SURVIVAL_COMM);
 
-    /* Mandelbort set */
+    /* Mandelbrot set */
     double x_increment = (x_rightBound - x_leftBound) / x_point;
     double y_increment = (y_upperBound - y_lowerBound) / y_point;
     
@@ -161,14 +161,7 @@ int main(int argc, char** argv){
     }
     int *pixel = new int[globalProblemSize]{0};
     MPI_Allreduce(iteration, pixel, globalProblemSize, MPI_INT, MPI_SUM, SURVIVAL_COMM);
-    
-    // if(rank == 0){
-    //     for(int i=0; i<globalProblemSize; ++i){
-    //         int y = i / x_point;
-    //         int x = i % x_point;
-    //         printf("(%d, %d) = %d\n",x,y, iteration[y * x_point + x]);
-    //     }
-    // }
+
     if(rank == 0)
         write_png(argv[8], x_point, y_point, pixel);
     delete[] iteration;
