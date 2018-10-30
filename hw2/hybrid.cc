@@ -102,41 +102,54 @@ int main(int argc, char** argv){
     //allocate problem size to each task
 	int remainder = globalProblemSize % taskNum;
 	int quotient = globalProblemSize / taskNum;
-	int begin = rank * quotient; //the first element of a rank
 	int taskProblemSize = quotient;
-	if(rank < remainder){
-		++taskProblemSize;
-		begin += rank;
-	}else{
-		begin += remainder;
-	}
-    int end = begin + taskProblemSize;
+	if(rank < remainder) ++taskProblemSize;
+	
 
     
 
     //random x, y, and send them to each task
-    int *problem = new int[globalProblemSize];
-    int *iteration = new int[globalProblemSize];
+    int *globalProblem = new int[globalProblemSize];
+    
     for(int i=0; i<globalProblemSize; ++i){
-        problem[i] = i;
-        iteration[i] = 0;
+        globalProblem[i] = i;
     }
     //random the coordinate
     if(rank == 0){
         srand((unsigned)time(NULL));
         for(int i=0; i<globalProblemSize; ++i){
             int r = rand() % globalProblemSize;
-            std::swap(problem[i], problem[r]);
+            std::swap(globalProblem[i], globalProblem[r]);
         }
     }
-    MPI_Bcast(problem, globalProblemSize, MPI_INT, 0, SURVIVAL_COMM);
 
-    /* Mandelbrot set */
+
+    int *displacement = new int[taskNum];
+    int *count = new int[taskNum];
+    for(int i = 0; i<taskNum; ++i){
+        if(i != 0) displacement[i] = displacement[i-1] + count[i-1];
+        else displacement[i] = 0;
+        
+        if(i < remainder) count[i] = quotient + 1;
+        else count[i] = quotient;
+    }
+
+    int *problem = new int[taskProblemSize];
+    int *iteration = new int[taskProblemSize];
+    MPI_Scatterv(globalProblem, count, displacement, MPI_INT, problem, taskProblemSize, MPI_INT, 0, SURVIVAL_COMM);
+    // for(int i = 0; i<taskProblemSize; ++i){
+    //     printf("I'm rank %d, test %d = %d\n", rank, i, problem[i]);
+    // }
+
+
+    //MPI_Bcast(problem, globalProblemSize, MPI_INT, 0, SURVIVAL_COMM);
+
+    /* Mandelbort set */
     double x_increment = (x_rightBound - x_leftBound) / x_point;
     double y_increment = (y_upperBound - y_lowerBound) / y_point;
     
-    #pragma omp parallel for num_threads(threadNum) schedule(dynamic,1)
-    for(int i = begin; i<end; ++i){
+    #pragma omp parallel for num_threads(threadNum) schedule(dynamic,16)
+    for(int i = 0; i < count[rank]; ++i){
         // printf("I'm rank %d: %d\n", rank, problem[i]);
         //coordinate
         int y = problem[i] / x_point;
@@ -157,16 +170,33 @@ int main(int argc, char** argv){
             length = Z.x * Z.x + Z.y * Z.y;
             ++j;
         }
-        iteration[y * x_point + x] = j;
-        //printf("I'm rank %d: (%.2f, %.2f) = %d\n",rank, C.x, C.y, iteration[y * x_point + x]);
+        iteration[i] = j;
+        //printf("I'm rank %d: (%.2f, %.2f) = %d\n",rank, C.x, C.y, iteration[i]);
     }
     int *pixel = new int[globalProblemSize]{0};
-    MPI_Allreduce(iteration, pixel, globalProblemSize, MPI_INT, MPI_SUM, SURVIVAL_COMM);
+    int *globalIteration = new int[globalProblemSize];
+    MPI_Gatherv(iteration, taskProblemSize, MPI_INT, globalIteration, count, displacement, MPI_INT, 0, SURVIVAL_COMM);
 
-    if(rank == 0)
+                
+    // MPI_Allreduce(iteration, pixel, globalProblemSize, MPI_INT, MPI_SUM, SURVIVAL_COMM);
+    
+    if(rank == 0){
+        for(int i=0; i<globalProblemSize; ++i){
+            int y = globalProblem[i] / x_point;
+            int x = globalProblem[i] % x_point;
+            pixel[y*x_point + x] = globalIteration[i];
+            //printf("(%d, %d) = %d\n",x,y, globalIteration[i]);
+        }
         write_png(argv[8], x_point, y_point, pixel);
+    }
+
     delete[] iteration;
+    delete[] globalIteration;
     delete[] problem;
+    delete[] globalProblem;
+    delete[] displacement;
+    delete[] count;
+    delete[] pixel;
     
     MPI_Finalize();
 
