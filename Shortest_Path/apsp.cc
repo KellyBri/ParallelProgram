@@ -14,7 +14,6 @@ int main(int argc, char **argv){
 	MPI_Comm SURVIVAL_COMM;
 	MPI_Group WORLD_GROUP, SURVIVAL_GROUP;
 
-    // MPI_Init(&argc, &argv);
     MPI_Init(&argc, &argv);
 
     //determine the number of tasks in the group & the rank of each task within the communicator
