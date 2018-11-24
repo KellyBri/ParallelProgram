@@ -1,0 +1,38 @@
+--How to Compile
+In this directory, enter the following command:
+$ make apsp
+It will generate the executable file " apsp " in the current directory 
+$ make sssp
+It will generate the executable file " sssp " in the current directory 
+
+If you want to generate all the executable files in the current directory, please enter the following command
+$ make
+
+If you want to remove these executable files, please enter the following command
+$ make clean
+
+
+
+
+--How to Run
+Usage: srun -c 12 -n <procs> -N <procs> -pbatch ./<exe> <in> <out> 
+
+The meanings of the arguments are:
+procs – int; [1, 4]; number of processes.
+in  – string; the path to the input file.
+out – string; the path to the output file.
+
+e.g.:
+srun -c12 -n3 -N3 -pbatch ./apsp ./testcase/input/dense_5.in ./apsp/dense_5.out
+
+
+
+--Verify
+You can use different.cpp to generate an executable file such that you can use it to check the correctness of your output
+
+To Compile: g++ -std=c++11 different.cpp -o different
+To Run:     ./different <answer> <out>
+
+            The meanings of the arguments are:
+            answer - string; the path to the file with the correct answer.
+            out –    string; the path to the file of your answer.
