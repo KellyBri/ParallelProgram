@@ -26,28 +26,6 @@ int main(int argc, char **argv){
     inputFile.read((char*)&vertexNum, 4);
     inputFile.read((char*)&edgeNum, 4);
 
-    //Initial graph array for each task
-    int** graph = new int*[vertexNum];
-    #pragma omp parallel for num_threads(12) schedule(static)
-    for(int i = 0; i < vertexNum; ++i)
-        graph[i] = new int[vertexNum];
-
-    #pragma omp parallel for num_threads(12) schedule(static) collapse(2)
-    for(int i=0; i<vertexNum; ++i){
-        for(int j=0; j<vertexNum; ++j){
-            if(i != j) graph[i][j] = INFINITE;
-            else graph[i][j] = 0;
-        }
-    }
-
-    int source, destination, weight;
-    while( inputFile.read((char*)&source, 4) ){
-        inputFile.read((char*)&destination, 4);
-        inputFile.read((char*)&weight, 4);
-        graph[source][destination] = weight;
-    }
-    inputFile.close();
-
     //If the number of the problem size is larger than the number of tasks, finalize the unnecessary tasks
 	//It must create a new group before creating a new communicator!!
     SURVIVAL_COMM = MPI_COMM_WORLD;
@@ -65,7 +43,6 @@ int main(int argc, char **argv){
 		taskNum = vertexNum;
 	}
 
-
     //allocate problem size to each task
 	int remainder = vertexNum % taskNum;
 	int quotient = vertexNum / taskNum;
@@ -79,23 +56,39 @@ int main(int argc, char **argv){
 	}
 	int end = begin + taskVertexNum;
 
+
+    int* distance_rowk = new int[vertexNum];
+    distance_rowk[0] = 0;
+    #pragma omp parallel for num_threads(12) schedule(static)
+    for(int i=1; i<vertexNum; ++i) distance_rowk[i] = INFINITE;
+
     // new distance array for each task
     int* distance = new int[taskVertexNum * vertexNum];
     #pragma omp parallel for num_threads(12) schedule(static) collapse(2)
     for(int i=begin; i<end; ++i){
         for(int j=0; j<vertexNum; ++j){
-            distance[ (i-begin) * vertexNum + j ] = 0;
+            if( i == j) distance[ (i-begin) * vertexNum + j ] = 0;
+            else distance[ (i-begin) * vertexNum + j ] = INFINITE;
         }
     }
+
+    int source, destination, weight;
+    while( inputFile.read((char*)&source, 4) ){
+        inputFile.read((char*)&destination, 4);
+        inputFile.read((char*)&weight, 4);
+        if(source == 0) distance_rowk[destination] = weight;
+        if(source >= begin && source < end) distance[ (source - begin) * vertexNum + destination ] = weight;
+    }
+    inputFile.close();
+    
+
     //do k=0
-    int d, index;
-    #pragma omp parallel for num_threads(12) schedule(static) collapse(2) private(d, index)
+    int index;
+    #pragma omp parallel for num_threads(12) schedule(static) collapse(2) private(index)
     for(int i=begin; i<end; ++i){
         for(int j=0; j<vertexNum; ++j){
-            d = graph[i][0] + graph[0][j];
             index = (i-begin) * vertexNum + j;
-            if( d < graph[i][j] ) distance[ index ] = d;
-            else distance[ index ] = graph[i][j];
+            distance[ index ] = std::min( distance[ index ], distance[ index - j ] + distance_rowk[j] );
         }
     }
 
@@ -112,18 +105,12 @@ int main(int argc, char **argv){
 
 
     //Floyd Warshall
-    int root, offset, offset_k;
-    int* distance_rowk = new int[vertexNum];  
+    int root, offset;
     for(int k=1; k<vertexNum; ++k){
         //recv k-th row distance to other process(es)
         if( k >= begin && k < end ){
             root = rank;
-            offset_k = (k-begin) * vertexNum;
-            #pragma omp parallel for num_threads(12) schedule(static)
-            for(int i=0; i<vertexNum; ++i){
-                distance_rowk[i] = distance[ offset_k+i ];
-            }
-            MPI_Bcast( distance_rowk, vertexNum, MPI_INT, root, SURVIVAL_COMM );
+            MPI_Bcast( distance + (k-begin) * vertexNum, vertexNum, MPI_INT, root, SURVIVAL_COMM );
             //calculate shortest path
             #pragma omp parallel for num_threads(12) schedule(static) collapse(2) private(offset)
             for(int i=0; i<taskVertexNum; ++i){
@@ -159,7 +146,6 @@ int main(int argc, char **argv){
     
     delete[] count;
     delete[] displacement;
-    delete[] graph;
     delete[] distance;
     delete[] distance_rowk;
 	MPI_Finalize();
